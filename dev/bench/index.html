@@ -9,12 +9,16 @@
         -webkit-font-smoothing: antialiased;
         background-color: #fff;
         font-size: 16px;
+        height: 100%;
       }
       body {
         color: #4a4a4a;
         margin: 8px;
         font-size: 1em;
         font-weight: 400;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
       }
       header {
         margin-bottom: 8px;
@@ -57,6 +61,11 @@
       .page-view.active {
         display: block;
       }
+      #ci-page.page-view.active {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
       main {
         width: 100%;
         display: flex;
@@ -64,9 +73,11 @@
       }
       #ci-metrics-frame {
         width: 100%;
-        min-height: calc(100vh - 120px);
+        height: calc(100vh - 88px);
+        min-height: 0;
         border: 0;
         background: #ffffff;
+        display: block;
       }
       a {
         color: #3273dc;
