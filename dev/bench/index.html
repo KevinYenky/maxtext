@@ -9,22 +9,75 @@
         -webkit-font-smoothing: antialiased;
         background-color: #fff;
         font-size: 16px;
+        height: 100%;
       }
       body {
         color: #4a4a4a;
         margin: 8px;
         font-size: 1em;
         font-weight: 400;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
       }
       header {
         margin-bottom: 8px;
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-item {
+        display: flex;
+        align-items: center;
+      }
+      .view-toggle {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px;
+        border: 1px solid #dfe3e8;
+        border-radius: 999px;
+        background: #f5f7fa;
+      }
+      .toggle-button {
+        color: #4a4a4a;
+        background: transparent;
+        border: none;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .toggle-button.active {
+        color: #fff;
+        background-color: #3298dc;
+      }
+      .page-view {
+        display: none;
+      }
+      .page-view.active {
+        display: block;
+      }
+      #ci-page.page-view.active {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
       }
       main {
         width: 100%;
         display: flex;
         flex-direction: column;
+      }
+      #ci-metrics-frame {
+        width: 100%;
+        height: calc(100vh - 88px);
+        min-height: 0;
+        border: 0;
+        background: #ffffff;
+        display: block;
       }
       a {
         color: #3273dc;
@@ -96,13 +149,24 @@
         <strong class="header-label">Repository:</strong>
         <a id="repository-link" rel="noopener"></a>
       </div>
+      <div class="view-toggle" aria-label="View toggle">
+        <button class="toggle-button active" data-view="benchmarks" type="button">Benchmarks</button>
+        <button class="toggle-button" data-view="ci" type="button">CI Pulse</button>
+      </div>
     </header>
-    <main id="main"></main>
-    <footer>
-      <button id="dl-button">Download data as JSON</button>
-      <div class="spacer"></div>
-      <div class="small">Powered by <a rel="noopener" href="https://github.com/marketplace/actions/continuous-benchmark">github-action-benchmark</a></div>
-    </footer>
+
+    <div id="benchmarks-page" class="page-view active">
+      <main id="main"></main>
+      <footer>
+        <button id="dl-button">Download data as JSON</button>
+        <div class="spacer"></div>
+        <div class="small">Powered by <a rel="noopener" href="https://github.com/marketplace/actions/continuous-benchmark">github-action-benchmark</a></div>
+      </footer>
+    </div>
+
+    <div id="ci-page" class="page-view">
+      <iframe id="ci-metrics-frame" title="CI Metrics dashboard" src="../../tools/ci_metrics/site/index.html"></iframe>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.2/dist/Chart.min.js"></script>
     <script src="data.js"></script>
@@ -167,6 +231,23 @@
             dataSet: collectBenchesPerTestCase(data.entries[name]),
           }));
         }
+
+        function setActiveView(viewName) {
+          const views = document.querySelectorAll('.page-view');
+          const buttons = document.querySelectorAll('.toggle-button');
+
+          views.forEach(view => {
+            view.classList.toggle('active', view.id === `${viewName}-page`);
+          });
+
+          buttons.forEach(button => {
+            button.classList.toggle('active', button.dataset.view === viewName);
+          });
+        }
+
+        document.querySelectorAll('.toggle-button').forEach(button => {
+          button.addEventListener('click', () => setActiveView(button.dataset.view));
+        });
 
         function renderAllChars(dataSets) {
 
@@ -274,6 +355,7 @@
           }
         }
 
+        setActiveView('benchmarks');
         renderAllChars(init()); // Start
       })();
     </script>
