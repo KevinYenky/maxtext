@@ -197,7 +197,6 @@ To run a Pathways workload with Multi-Tier Checkpointing, use Cluster Toolkit wi
 | :-------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
 | `--gke-mtc-enabled`                                 | Configures the MTC service and mounts the ramdisk on the workload pods.                                   |
 | `--gke-mtc-ramdisk-dir=<path>`                      | Specifies the ramdisk mount path. This must match the MaxText `local_checkpoint_directory` configuration. |
-| `--pathways-colocated-python-sidecar-image=<image>` | Specifies the Colocated Python sidecar image used for worker-local checkpoint operations.                 |
 
 ### Example Cluster Toolkit workload submission
 
@@ -210,7 +209,6 @@ To run a Pathways workload with Multi-Tier Checkpointing, use Cluster Toolkit wi
    NUM_SLICES="<number-of-slices>"
    OUTPUT_PATH="gs://<bucket>"
    MAXTEXT_IMAGE="<maxtext-head-image>"
-   COLOCATED_PYTHON_IMAGE="<maxtext-colocated-python-image>"
    MAXTEXT_CONFIG="/deps/src/maxtext/configs/base.yml"
    RAMDISK_DIRECTORY="/tmp/mtc_checkpoints"
    LOCAL_CHECKPOINT_PERIOD=10
@@ -246,15 +244,17 @@ To run a Pathways workload with Multi-Tier Checkpointing, use Cluster Toolkit wi
 
    ```bash
    ./gcluster job submit \
-     --name="${JOB_NAME}" \
-     --pathways \
-     --compute-type="${COMPUTE_TYPE}" \
-     --topology="${TOPOLOGY}" \
-     --num-slices="${NUM_SLICES}" \
-     --image="${MAXTEXT_IMAGE}" \
-     --pathways-colocated-python-sidecar-image="${COLOCATED_PYTHON_IMAGE}" \
-     --pathways-gcs-location="${OUTPUT_PATH}" \
-     --gke-mtc-enabled \
-     --gke-mtc-ramdisk-dir="${RAMDISK_DIRECTORY}" \
-     --command="${COMMAND}"
+      --project="${PROJECT_ID}" \
+      --cluster="${CLUSTER_NAME}" \
+      --location="${ZONE}" \
+      --name="${JOB_NAME}" \
+      --pathways \
+      --compute-type="${COMPUTE_TYPE}" \
+      --topology="${TOPOLOGY}" \
+      --num-slices="${NUM_SLICES}" \
+      --image="${MAXTEXT_IMAGE}" \
+      --pathways-gcs-location="${OUTPUT_PATH}" \
+      --gke-mtc-enabled \
+      --gke-mtc-ramdisk-dir="${RAMDISK_DIRECTORY}" \
+      --command="${COMMAND}"
    ```
