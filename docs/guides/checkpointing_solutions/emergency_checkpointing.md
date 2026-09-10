@@ -29,14 +29,14 @@ The cluster-level settings that must be enabled are:
 
 The total size of a full training checkpoint (including model weights and optimizer state) can be estimated based on the number of model parameters.
 A good rule of thumb:
-**Total Checkpoint Size â‰ˆ Number of Parameters Ã— 12 bytes**
+**Total Checkpoint Size ≈ Number of Parameters × 12 bytes**
 
-For example, a 1 billion parameter model would require approximately **1B Ã— 12 bytes = 12 GB** for a full checkpoint.
+For example, a 1 billion parameter model would require approximately **1B × 12 bytes = 12 GB** for a full checkpoint.
 
 In a distributed training environment, the checkpoint is **sharded**, or split, across all the hosts in a slice. Each host is only responsible for saving its portion of the total checkpoint. Therefore, the ramdisk on a single pod only needs to be large enough for its local shard.
 
 The formula is:
-**Required Ramdisk Size per Pod â‰ˆ 2 * (Total Checkpoint Size / Number of Hosts in the Slice)**
+**Required Ramdisk Size per Pod ≈ 2 * (Total Checkpoint Size / Number of Hosts in the Slice)**
 
 It's a good practice to add a **10-15% buffer**.
 
@@ -48,17 +48,17 @@ Let's walk through an example for a large model.
 - **Training Slice**: A nodepool with **32 hosts**.
 
 1. **Estimate Total Checkpoint Size**:
-   `70,000,000,000 parameters Ã— 12 bytes/parameter = 840,000,000,000 bytes`
-   `840,000,000,000 bytes â‰ˆ 840 GB`
+   `70,000,000,000 parameters × 12 bytes/parameter = 840,000,000,000 bytes`
+   `840,000,000,000 bytes ≈ 840 GB`
 
 2. **Calculate Per-Host Checkpoint shard**:
    `(Total Checkpoint Size / 32 hosts) = 26.25 GB per host`
 
 3. **Calculate Per-Host Ramdisk Size**:
-   `(Per-Host Checkpoint shard) * 2 = 52.50 GB per host`
+   `(Per-Host Checkpoint shard) × 2 = 52.50 GB per host`
 
 4. **Add a Safety Buffer (e.g., 15%)**:
-   `(Per-Host Ramdisk Size) Ã— 1.15 â‰ˆ 60.3 GB`
+   `(Per-Host Ramdisk Size) × 1.15 ≈ 60.3 GB`
 
 In this scenario, you should configure each pod in that slice with a ramdisk of at least **60 GB**.
 
