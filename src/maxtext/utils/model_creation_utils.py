@@ -1248,7 +1248,34 @@ def from_pretrained(
           return _align_checkpoint_to_model_shapes(ckpt, model_arr, axes)
 
         checkpoint = _walk_align(checkpoint, model_arrays, logical_axes_tree)
-        nnx.update(model, checkpoint)
+        nnx.replace_by_pure_dict(sharded_state, checkpoint)
+        nnx.update(model, sharded_state)
+        # NOTE: The block below is only needed on 32 GiB HBM chips (e.g. TPU v6e) to avoid an
+        # XLA HBM OOM (~31.35 GiB required vs 31.24 GiB available for 70B models on 8 chips).
+        # NNXDecoder._apply_layers_sequentially already transposes `param_scan_axis` to 0 inside
+        # `jit_run_model` (`jnp.moveaxis(x, scan_axis, 0)`), which works directly on larger HBM
+        # chips (e.g. TPU v5p 95 GiB), but holds both the original and transposed weights in HBM
+        # simultaneously during JIT execution. Moving `param_scan_axis` to 0 eagerly one tensor
+        # at a time and deleting the old buffer prevents that temporary HBM spike on TPU v6e.
+        if (
+            config.scan_layers
+            and config.param_scan_axis != 0
+            and (model_mode == MODEL_MODE_AUTOREGRESSIVE or config.attention in ("vllm_rpa", "vllm_batched_rpa"))
+        ):
+          scan_ax = config.param_scan_axis
+          def _move_scan_ax_to_0(v):
+            if isinstance(v, nnx.Param) and hasattr(v, "value") and isinstance(v.value, jax.Array) and v.value.ndim > scan_ax:
+              old_val = v.value
+              new_val = jnp.moveaxis(old_val, scan_ax, 0).block_until_ready()
+              v.value = new_val
+              if not old_val.is_deleted():
+                old_val.delete()
+            return v
+          jax.tree.map(_move_scan_ax_to_0, model.decoder.layers, is_leaf=lambda x: isinstance(x, nnx.Variable))
+          object.__getattribute__(config, "_flat_config")["param_scan_axis"] = 0
+          del checkpoint, sharded_state, model_arrays
+          import gc
+          gc.collect()
       else:
         raise ValueError(
             f"Checkpoint restore from '{config.load_parameters_path}' yielded no parameters. "
